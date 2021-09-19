@@ -1,0 +1,60 @@
+local $oChrome=_UIA_getFirstObjectOfElement($UIA_oDesktop,"class:=Chrome_WidgetWin_1", $treescope_children)
+$oChrome.setfocus()
+
+;~ _UIA_DumpThemAll($oDesktop,$treescope_children)
+
+if isobj($oChrome) Then
+;~ All stuff on the page to be dumped in an xml file in log folder
+_UIA_DumpThemAll($oChrome,$treescope_subtree)
+
+;~  get the addressbar
+;~  $oChromeAddressBar=_UIA_getFirstObjectOfElement($oChrome,"class:=Chrome_OmniboxView", $treescope_children) ;worked in chrome 28
+;~ local $oChromeAddressBar=_UIA_getFirstObjectOfElement($oChromeToolbar,"controltype:=" & $UIA_EditControlTypeId , $treescope_subtree) ;works in chrome 29
+;~ $oChromeAddressBar=_UIA_getFirstObjectOfElement($oChromeToolbar,"helptext:=OmniboxViewViews", $treescope_subtree) ;works in chrome 42
+;~  $oChromeAddressBar=_UIA_getFirstObjectOfElement($oChrome,"name:=Adres- en zoekbalk"  , $treescope_children) ;works in chrome 29
+
+local $oChromeAddressBar=_UIA_getFirstObjectOfElement($oChrome,"title:=Adres- en zoekbalk"  , $treescope_subtree) ;works in chrome 65
+
+;~  _UIA_DumpThemAll($oChromeToolbar,$treescope_children)
+local $oValueP=_UIA_getpattern($oChromeAddressBar,$UIA_ValuePatternId)
+
+;~  get the value of the addressbar
+local $myText=""
+$oValueP.CurrentValue($myText)
+consolewrite("address: " & $myText & @CRLF)
+sleep(500)
+
+;~ Click all tabs, chrome hides them a little in the hierarchy but first find the tablist
+local $oChromeTabs=_UIA_getFirstObjectOfElement($oChrome,"controltype:=" & $UIA_TabControlTypeId, $treescope_subtree)
+ _UIA_DumpThemall($oChromeTabs,$treescope_children)
+
+;~  Get result with findall function alternative could be the treewalker
+    local  $pCondition, $pTrueCondition
+    local  $pElements, $iLength
+
+;~  and now just find all childs which are 4 tabs and 1 new button looking like a tab
+    $UIA_oUIAutomation.CreateTrueCondition($pTRUECondition)
+    local $oCondition=ObjCreateInterface($pTrueCondition, $sIID_IUIAutomationCondition,$dtagIUIAutomationCondition)
+
+    $oChromeTabs.FindAll($treescope_children, $oCondition, $pElements)
+    local $oAutomationElementArray = ObjCreateInterFace($pElements, $sIID_IUIAutomationElementArray, $dtagIUIAutomationElementArray)
+
+    $oAutomationElementArray.Length($iLength)
+    consolewrite("We have " & $ilength & " tabs" & @CRLF)
+
+    For $i = 0 To $iLength - 1; it's zero based
+    $oAutomationElementArray.GetElement($i, $UIA_pUIElement)
+        local $oUIElement = ObjCreateInterface($UIA_pUIElement, $sIID_IUIAutomationElement, $dtagIUIAutomationElement)
+        consolewrite( "Title is: <" &  _UIA_getPropertyValue($oUIElement,$UIA_NamePropertyId) &  ">" & @TAB _
+   & "Class   := <" & _UIA_getPropertyValue($oUIElement,$uia_classnamepropertyid) &  ">" & @TAB _
+& "controltype:= <" &  _UIA_getPropertyValue($oUIElement,$UIA_ControlTypePropertyId) &  ">" & @TAB & @CRLF)
+;~  Invoke or select them all
+;~ Tricky as chrome seems to say it supports certain patterns but then they seem not to be implemented
+
+
+;~ only tabs with content
+if _UIA_getPropertyValue($oUIElement, $UIA_IsSelectionItemPatternAvailablePropertyId) = "True" Then
+_UIA_action($oUIElement,"leftclick")
+;~  $oSelectP=_UIA_getpattern($oUIElement,$UIA_SelectionItemPatternId)
+;~  $oSelectP.Select()
+EndIf
